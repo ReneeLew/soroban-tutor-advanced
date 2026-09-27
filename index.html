@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Soroban Math Tutor</title>
+  <style>
+    :root {
+      --bg-color: #0b1329;
+      --card-bg: #152243;
+      --card-border: #1e3a6a;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --frame-color: #5c2c16;
+      --beam-color: #3b1909;
+      --bead-color: #e2a03f;
+      --bead-border: #9a5b13;
+      --bead-active: #f59e0b;
+      --success: #22c55e;
+      --error: #ef4444;
+
+      /* Dynamic Abacus Dimensions */
+      --bead-h: 32px;
+      --bead-w: 60px;
+      --beam-h: 12px;
+      --beam-gap: 0px;
+      --upper-travel: 24px;
+      --lower-travel: 20px;
+      --deck-top-h: 62px;
+      --deck-bot-h: 154px;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      position: fixed;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 8px 12px 10px;
+      gap: 6px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .app-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .stat-badge {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 4px 10px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .settings-grid, .display-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: var(--card-bg);
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      flex-shrink: 0;
+    }
+
+    .setting-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .setting-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    select {
+      background: #0b1329;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      border-radius: 5px;
+      padding: 4px 6px;
+      font-size: 0.8rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .problem-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .equation-display {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: #fff;
+    }
+
+    .target-hint {
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* Step-by-Step Guidance Box */
+    .tutor-card {
+      background: #0f1c3f;
+      border: 1px solid #1d4ed8;
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .tutor-card.step-achieved {
+      border-color: var(--success);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    }
+
+    .tutor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .step-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-zero-confirm {
+      background: #059669;
+      border: 1px solid #34d399;
+      color: #ecfdf5;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .btn-zero-confirm:hover {
+      background: #10b981;
+    }
+
+    .reveal-btn {
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+      color: #93c5fd;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .step-indicator-pill {
+      background: #1e3a8a;
+      padding: 2px 8px;
+      border-radius: 999px;
+      color: #93c5fd;
+      font-size: 0.7rem;
+    }
+
+    .tutor-body {
+      font-size: 0.95rem;
+      line-height: 1.35;
+      color: #e2e8f0;
+    }
+
+    .tutor-body b {
+      color: #38bdf8;
+    }
+
+    .tutor-subtext {
+      font-size: 0.8rem;
+      color: #93c5fd;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Soroban Frame */
+    .soroban-wrapper {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 0;
+    }
+
+    .soroban-frame {
+      background: var(--frame-color);
+      border: 8px solid #3b1909;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .soroban-interior {
+      display: flex;
+      background: #1e1b18;
+      position: relative;
+    }
+
+    .soroban-rod {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      width: var(--bead-w);
+      transition: background-color 0.2s ease;
+    }
+
+    .soroban-rod.highlighted-rod {
+      background-color: rgba(56, 189, 248, 0.18);
+    }
+
+    .soroban-rod::before {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(90deg, #94a3b8, #cbd5e1, #64748b);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      border-radius: 2px;
+    }
+
+    .deck-upper {
+      height: var(--deck-top-h);
+      position: relative;
+      width: 100%;
+    }
+
+    .beam-divider {
+      height: var(--beam-h);
+      background: var(--beam-color);
+      border-top: 1px solid #5a2810;
+      border-bottom: 1px solid #200c03;
+      width: 100%;
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+    }
+
+    .unit-dot {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: #ffffff;
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 4px rgba(255,255,255,0.8);
+    }
+
+    .deck-lower {
+      height: var(--deck-bot-h);
+      position: relative;
+      width: 100%;
+    }
+
+    .bead {
+      position: absolute;
+      width: calc(100% - 4px);
+      left: 2px;
+      height: var(--bead-h);
+      background: radial-gradient(circle at 50% 30%, #fcd34d, var(--bead-color) 60%, var(--bead-border) 100%);
+      border-radius: 12px / 50%;
+      z-index: 2;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .bead::after {
+      content: '';
+      position: absolute;
+      top: -12px;
+      bottom: -12px;
+      left: -6px;
+      right: -6px;
+      z-index: 4;
+    }
+
+    .bead.active {
+      background: radial-gradient(circle at 50% 30%, #fef08a, var(--bead-active) 60%, #b45309 100%);
+    }
+
+    .deck-upper .bead { top: 0px; }
+    .deck-lower .bead[data-index="0"] { top: calc(var(--lower-travel) + var(--beam-gap)); }
+    .deck-lower .bead[data-index="1"] { top: calc(var(--lower-travel) + var(--beam-gap) + var(--bead-h) + 1px); }
+    .deck-lower .bead[data-index="2"] { top: calc(var(--lower-travel) + var(--beam-gap) + (var(--bead-h) * 2) + 2px); }
+    .deck-lower .bead[data-index="3"] { top: calc(var(--lower-travel) + var(--beam-gap) + (var(--bead-h) * 3) + 3px); }
+
+    .rod-values-bar {
+      display: flex;
+      width: 100%;
+      background: #160c07;
+      border-top: 2px solid #3b1909;
+      padding: 3px 0;
+    }
+
+    .rod-value-indicator {
+      width: var(--bead-w);
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fbbf24;
+      font-family: monospace;
+    }
+
+    .footer-actions {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    button.btn-action {
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, transform 0.05s ease;
+    }
+
+    button.btn-action:active { transform: scale(0.98); }
+
+    .btn-clear { background: #334155; color: #f1f5f9; }
+    .btn-clear:hover { background: #475569; }
+    .btn-check { background: var(--accent); color: #0b1329; }
+    .btn-check:hover { background: var(--accent-hover); }
+
+    .btn-next-problem {
+      background: var(--success) !important;
+      color: #0b1329 !important;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+      70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <header>
+    <div class="app-title">Soroban Math Tutor</div>
+    <div class="stats-bar">
+      <div class="stat-badge" title="Session Solved">⭐ <span id="solved-num">0</span></div>
+      <div class="stat-badge" title="Streak">🔥 <span id="streak-num">0</span></div>
+      <div class="stat-badge" title="Best">🏆 <span id="best-streak-num">0</span></div>
+    </div>
+  </header>
+
+  <!-- Math Settings -->
+  <div class="settings-grid">
+    <div class="setting-item">
+      <label class="setting-label" for="op-select">Operation</label>
+      <select id="op-select">
+        <option value="mult">Multiply (×)</option>
+        <option value="div">Divide (÷)</option>
+        <option value="mix">Mix (× & ÷)</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="diff-select">Difficulty</label>
+      <select id="diff-select">
+        <option value="1">Lvl 1 (1D × 1D, 2D ÷ 1D)</option>
+        <option value="2">Lvl 2 (2D × 1D, 2D ÷ 1D)</option>
+        <option value="3" selected>Lvl 3 (2D × 2D, 3D ÷ 1D)</option>
+        <option value="4">Lvl 4 (3D × 1D, 3D ÷ 2D)</option>
+        <option value="5">Lvl 5 (3D × 2D, 4D ÷ 2D)</option>
+        <option value="6">Lvl 6 (4D × 2D, 5D ÷ 2D)</option>
+        <option value="7">Lvl 7 (3D × 3D, 5D ÷ 3D)</option>
+        <option value="8">Lvl 8 (4D × 3D, 6D ÷ 3D)</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="hints-select">Tutor Steps</label>
+      <select id="hints-select">
+        <option value="step">Step-by-Step Guide</option>
+        <option value="off">Independent Practice</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="mode-select">Check Mode</label>
+      <select id="mode-select">
+        <option value="retry">Allow Retry</option>
+        <option value="strict">Strict (Reset Streak)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Physical Display Settings -->
+  <div class="display-grid">
+    <div class="setting-item">
+      <label class="setting-label" for="bead-size-select">Bead Size</label>
+      <select id="bead-size-select">
+        <option value="sm">Small (24px)</option>
+        <option value="md">Med (28px)</option>
+        <option value="lg" selected>Large (32px)</option>
+        <option value="xl">XL (36px)</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="beam-gap-select">Beam Gap</label>
+      <select id="beam-gap-select">
+        <option value="flush" selected>Flush (0px)</option>
+        <option value="compact">Compact (2px)</option>
+        <option value="trad">Traditional (4px)</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="beam-bar-select">Beam Bar</label>
+      <select id="beam-bar-select">
+        <option value="slim">Slim (10px)</option>
+        <option value="med" selected>Med (12px)</option>
+        <option value="thick">Thick (16px)</option>
+      </select>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="rod-count-select">Rods</label>
+      <select id="rod-count-select">
+        <option value="5">5 Rods</option>
+        <option value="7" selected>7 Rods</option>
+        <option value="9">9 Rods</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Math Equation Box -->
+  <div class="problem-box">
+    <div class="equation-display" id="equation-text">Loading...</div>
+    <div class="target-hint" id="target-hint">Target: Show result on abacus</div>
+  </div>
+
+  <!-- Step-by-Step Instruction Card -->
+  <div class="tutor-card" id="tutor-card">
+    <div class="tutor-header">
+      <span id="step-title">Step Guidance</span>
+      <div class="step-actions">
+        <button class="btn-zero-confirm" id="btn-zero-confirm">Confirm (0) → Next Step</button>
+        <button class="reveal-btn" id="btn-reveal">Reveal Target</button>
+        <span class="step-indicator-pill" id="step-pill">Active</span>
+      </div>
+    </div>
+    <div class="tutor-body" id="tutor-body">
+      Loading problem steps...
+    </div>
+    <div class="tutor-subtext">
+      <span id="tutor-status">Set beads on rods</span>
+      <span id="target-status" style="font-weight: 700; color: #38bdf8;"></span>
+    </div>
+  </div>
+
+  <!-- Soroban Board Frame -->
+  <div class="soroban-wrapper">
+    <div class="soroban-frame" id="soroban-board">
+      <div class="soroban-interior" id="soroban-interior"></div>
+      <div class="beam-divider" id="beam-divider"></div>
+      <div class="soroban-interior" id="soroban-interior-lower"></div>
+      <div class="rod-values-bar" id="rod-values"></div>
+    </div>
+  </div>
+
+  <!-- Sticky Actions -->
+  <div class="footer-actions">
+    <button class="btn-action btn-clear" id="btn-clear">Clear (0)</button>
+    <button class="btn-action btn-check" id="btn-check">Check Step / Answer</button>
+  </div>
+</div>
+
+<script>
+  /* --- Anti-Zoom & Touch Interception --- */
+  document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+  document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  /* --- App State --- */
+  let numRods = 7;
+  let activeProblem = { num1: 0, num2: 0, op: '×', answer: 0 };
+  let abacusState = [];
+  let solvedCount = parseInt(localStorage.getItem('soroban_solved'), 10) || 0;
+  let streak = parseInt(localStorage.getItem('soroban_streak'), 10) || 0;
+  let bestStreak = parseInt(localStorage.getItem('soroban_best'), 10) || 0;
+
+  document.getElementById('streak-num').textContent = streak;
+  document.getElementById('best-streak-num').textContent = bestStreak;
+  document.getElementById('solved-num').textContent = solvedCount;
+
+  let problemSteps = [];
+  let currentStepIdx = 0;
+  let isAdvancing = false;
+  let isProblemCompleted = false;
+
+  /* --- Dimensions --- */
+  const BEAD_SIZES = {
+    sm: { beadH: 24, beadW: 46, uTravel: 18, lTravel: 16, topH: 48, botH: 122 },
+    md: { beadH: 28, beadW: 52, uTravel: 22, lTravel: 18, topH: 56, botH: 138 },
+    lg: { beadH: 32, beadW: 60, uTravel: 25, lTravel: 20, topH: 64, botH: 156 },
+    xl: { beadH: 36, beadW: 68, uTravel: 28, lTravel: 22, topH: 72, botH: 174 }
+  };
+  const BEAM_GAPS = { flush: 0, compact: 2, trad: 5 };
+  const BEAM_BARS = { slim: 10, med: 12, thick: 16 };
+
+  function applyPhysicalLayout() {
+    const sizeKey = document.getElementById('bead-size-select').value;
+    const gapKey = document.getElementById('beam-gap-select').value;
+    const barKey = document.getElementById('beam-bar-select').value;
+
+    const s = BEAD_SIZES[sizeKey];
+    const gap = BEAM_GAPS[gapKey];
+    const barH = BEAM_BARS[barKey];
+
+    let width = s.beadW;
+    if (numRods === 9 && (sizeKey === 'xl' || sizeKey === 'lg')) width = 50;
+
+    const root = document.documentElement;
+    root.style.setProperty('--bead-h', `${s.beadH}px`);
+    root.style.setProperty('--bead-w', `${width}px`);
+    root.style.setProperty('--beam-h', `${barH}px`);
+    root.style.setProperty('--beam-gap', `${gap}px`);
+    root.style.setProperty('--upper-travel', `${s.uTravel}px`);
+    root.style.setProperty('--lower-travel', `${s.lTravel}px`);
+    root.style.setProperty('--deck-top-h', `${s.topH + gap}px`);
+    root.style.setProperty('--deck-bot-h', `${s.botH + gap}px`);
+
+    renderAbacus();
+  }
+
+  /* --- Abacus State Management --- */
+  function initAbacusState() {
+    abacusState = Array.from({ length: numRods }, () => ({
+      upper: false,
+      lower: [false, false, false, false]
+    }));
+  }
+
+  function getRodValue(rodIdx) {
+    const rod = abacusState[rodIdx];
+    let val = rod.upper ? 5 : 0;
+    rod.lower.forEach(b => { if (b) val += 1; });
+    return val;
+  }
+
+  function getTotalValue() {
+    let total = 0;
+    for (let i = 0; i < numRods; i++) {
+      total = total * 10 + getRodValue(i);
+    }
+    return total;
+  }
+
+  function renderAbacus() {
+    const upperContainer = document.getElementById('soroban-interior');
+    const beamDivider = document.getElementById('beam-divider');
+    const lowerContainer = document.getElementById('soroban-interior-lower');
+    const rodValuesBar = document.getElementById('rod-values');
+
+    upperContainer.innerHTML = '';
+    beamDivider.innerHTML = '';
+    lowerContainer.innerHTML = '';
+    rodValuesBar.innerHTML = '';
+
+    for (let r = 0; r < numRods; r++) {
+      const upperRod = document.createElement('div');
+      upperRod.className = 'soroban-rod deck-upper';
+      upperRod.dataset.rod = r;
+      upperRod.id = `upper-rod-${r}`;
+
+      const upperBead = document.createElement('div');
+      upperBead.className = `bead ${abacusState[r].upper ? 'active' : ''}`;
+      upperBead.dataset.type = 'upper';
+      upperBead.dataset.rod = r;
+      if (abacusState[r].upper) upperBead.style.transform = `translateY(var(--upper-travel))`;
+      bindBeadTouch(upperBead);
+      upperRod.appendChild(upperBead);
+      upperContainer.appendChild(upperRod);
+
+      const dot = document.createElement('div');
+      dot.style.position = 'relative';
+      dot.style.width = 'var(--bead-w)';
+      dot.style.height = '100%';
+      const distFromRight = (numRods - 1) - r;
+      if (distFromRight === 0 || distFromRight % 3 === 0) {
+        const marker = document.createElement('div');
+        marker.className = 'unit-dot';
+        dot.appendChild(marker);
+      }
+      beamDivider.appendChild(dot);
+
+      const lowerRod = document.createElement('div');
+      lowerRod.className = 'soroban-rod deck-lower';
+      lowerRod.dataset.rod = r;
+      lowerRod.id = `lower-rod-${r}`;
+
+      for (let i = 0; i < 4; i++) {
+        const lowerBead = document.createElement('div');
+        lowerBead.className = `bead ${abacusState[r].lower[i] ? 'active' : ''}`;
+        lowerBead.dataset.type = 'lower';
+        lowerBead.dataset.rod = r;
+        lowerBead.dataset.index = i;
+        if (abacusState[r].lower[i]) lowerBead.style.transform = `translateY(calc(-1 * var(--lower-travel)))`;
+        bindBeadTouch(lowerBead);
+        lowerRod.appendChild(lowerBead);
+      }
+      lowerContainer.appendChild(lowerRod);
+
+      const valBox = document.createElement('div');
+      valBox.className = 'rod-value-indicator';
+      valBox.id = `val-rod-${r}`;
+      valBox.textContent = getRodValue(r);
+      rodValuesBar.appendChild(valBox);
+    }
+
+    renderCurrentStep();
+  }
+
+  function updateBeadDOM(rod, type, idx) {
+    const r = parseInt(rod, 10);
+    if (type === 'upper') {
+      const bead = document.querySelector(`.deck-upper [data-rod="${r}"][data-type="upper"]`);
+      if (bead) {
+        if (abacusState[r].upper) {
+          bead.classList.add('active');
+          bead.style.transform = 'translateY(var(--upper-travel))';
+        } else {
+          bead.classList.remove('active');
+          bead.style.transform = 'translateY(0px)';
+        }
+      }
+    } else {
+      const beads = document.querySelectorAll(`.deck-lower [data-rod="${r}"][data-type="lower"]`);
+      beads.forEach((b, i) => {
+        if (abacusState[r].lower[i]) {
+          b.classList.add('active');
+          b.style.transform = 'translateY(calc(-1 * var(--lower-travel)))';
+        } else {
+          b.classList.remove('active');
+          b.style.transform = 'translateY(0px)';
+        }
+      });
+    }
+
+    document.getElementById(`val-rod-${r}`).textContent = getRodValue(r);
+    evaluateLiveFeedback();
+  }
+
+  function bindBeadTouch(el) {
+    let startY = 0;
+    let rod = parseInt(el.dataset.rod, 10);
+    let type = el.dataset.type;
+    let idx = type === 'lower' ? parseInt(el.dataset.index, 10) : 0;
+
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+      startY = e.clientY;
+    }, { passive: false });
+
+    el.addEventListener('pointerup', (e) => {
+      e.preventDefault();
+      try { el.releasePointerCapture(e.pointerId); } catch(err) {}
+      const deltaY = e.clientY - startY;
+
+      if (Math.abs(deltaY) < 4) {
+        if (type === 'upper') {
+          abacusState[rod].upper = !abacusState[rod].upper;
+        } else {
+          const currentState = abacusState[rod].lower[idx];
+          if (currentState) {
+            for (let i = idx; i < 4; i++) abacusState[rod].lower[i] = false;
+          } else {
+            for (let i = 0; i <= idx; i++) abacusState[rod].lower[i] = true;
+          }
+        }
+      } else if (deltaY > 4) {
+        if (type === 'upper') abacusState[rod].upper = true;
+        else for (let i = idx; i < 4; i++) abacusState[rod].lower[i] = false;
+      } else if (deltaY < -4) {
+        if (type === 'upper') abacusState[rod].upper = false;
+        else for (let i = 0; i <= idx; i++) abacusState[rod].lower[i] = true;
+      }
+
+      updateBeadDOM(rod, type, idx);
+    }, { passive: false });
+  }
+
+  function randBetween(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  /* --- Expanded Term Multiplication Step Generator --- */
+  function buildMultiplicationSteps(m1, m2) {
+    const steps = [];
+    const str1 = m1.toString();
+    const str2 = m2.toString();
+    let runningTotal = 0;
+
+    for (let j = 0; j < str2.length; j++) {
+      const d2 = parseInt(str2[j], 10);
+      const pv2 = Math.pow(10, str2.length - 1 - j);
+      const val2 = d2 * pv2;
+
+      for (let i = 0; i < str1.length; i++) {
+        const d1 = parseInt(str1[i], 10);
+        const pv1 = Math.pow(10, str1.length - 1 - i);
+        const val1 = d1 * pv1;
+
+        const product = val1 * val2;
+        const prevTotal = runningTotal;
+        runningTotal += product;
+
+        let promptText = `Multiply <b>${val1.toLocaleString()} × ${val2.toLocaleString()}</b>`;
+        if (product === 0) {
+          promptText += ` = <b>0</b>. Nothing to change on the beads. Confirm to proceed.`;
+        } else if (steps.length === 0) {
+          promptText += ` and set the result on the Soroban rods.`;
+        } else {
+          promptText += ` and add it to your current beads.`;
+        }
+
+        steps.push({
+          title: `Step ${steps.length + 1}`,
+          prompt: promptText,
+          isZeroStep: (product === 0),
+          deltaAdded: product,
+          targetRunning: runningTotal
+        });
+      }
+    }
+    return steps;
+  }
+
+  /* --- Place-Value Accurate Division Step Generator --- */
+  function buildDivisionSteps(dividend, divisor) {
+    const steps = [];
+    const quotient = dividend / divisor;
+    const qStr = quotient.toString();
+    let currentDividend = dividend;
+    let runningQuotient = 0;
+
+    for (let i = 0; i < qStr.length; i++) {
+      const qDigit = parseInt(qStr[i], 10);
+      const placeMultiplier = Math.pow(10, qStr.length - 1 - i);
+      const placeName = placeMultiplier === 1000 ? "thousands" :
+                        placeMultiplier === 100 ? "hundreds" :
+                        placeMultiplier === 10 ? "tens" : "units";
+
+      const partDividend = Math.floor(currentDividend / placeMultiplier);
+      const actualSubtracted = qDigit * divisor * placeMultiplier;
+
+      runningQuotient += qDigit * placeMultiplier;
+
+      let prompt = `Divide <b>${partDividend}</b> by <b>${divisor}</b>: `;
+      if (qDigit === 0) {
+        prompt += `It fits <b>0</b> times in the <b>${placeName}</b> column. Leave this rod at 0 and confirm.`;
+      } else if (placeMultiplier > 1) {
+        prompt += `It fits <b>${qDigit}</b> time${qDigit > 1 ? 's' : ''} in the <b>${placeName}</b> rod. `;
+        prompt += (steps.length === 0)
+          ? `Set <b>${qDigit}</b> on the ${placeName} column.`
+          : `Add <b>${qDigit}</b> to the ${placeName} rod.`;
+      } else {
+        prompt += `The remaining <b>${partDividend}</b> divided by <b>${divisor}</b> is <b>${qDigit}</b>. `;
+        prompt += `Dial <b>${qDigit}</b> on the units rod to complete the quotient.`;
+      }
+
+      steps.push({
+        title: `Step ${i + 1} of ${qStr.length}`,
+        prompt: prompt,
+        isZeroStep: (qDigit === 0),
+        deltaAdded: qDigit * placeMultiplier,
+        targetRunning: runningQuotient
+      });
+
+      currentDividend -= actualSubtracted;
+    }
+
+    return steps;
+  }
+
+  /* --- Problem Generator --- */
+  function generateProblem() {
+    isAdvancing = false;
+    isProblemCompleted = false;
+
+    const checkBtn = document.getElementById('btn-check');
+    checkBtn.textContent = 'Check Step / Answer';
+    checkBtn.classList.remove('btn-next-problem');
+
+    const opSetting = document.getElementById('op-select').value;
+    const level = parseInt(document.getElementById('diff-select').value, 10);
+
+    let op = opSetting === 'mult' ? '×' : (opSetting === 'div' ? '÷' : (Math.random() < 0.5 ? '×' : '÷'));
+    let n1 = 1, n2 = 1, ans = 0;
+
+    if (op === '×') {
+      switch (level) {
+        case 1: n1 = randBetween(2, 9); n2 = randBetween(2, 9); break;
+        case 2: n1 = randBetween(12, 98); n2 = randBetween(2, 9); break;
+        case 3: n1 = randBetween(14, 99); n2 = randBetween(12, 89); break;
+        case 4: n1 = randBetween(112, 988); n2 = randBetween(3, 9); break;
+        case 5: n1 = randBetween(105, 895); n2 = randBetween(15, 95); break;
+        case 6: n1 = randBetween(1025, 8950); n2 = randBetween(18, 98); break;
+        case 7: n1 = randBetween(125, 985); n2 = randBetween(115, 895); break;
+        case 8: n1 = randBetween(1150, 8950); n2 = randBetween(125, 895); break;
+      }
+      ans = n1 * n2;
+      problemSteps = buildMultiplicationSteps(n1, n2);
+    } else {
+      switch (level) {
+        case 1: n2 = randBetween(2, 9); ans = randBetween(2, 9); break;
+        case 2: n2 = randBetween(2, 9); ans = randBetween(11, 49); break;
+        case 3: n2 = randBetween(3, 9); ans = randBetween(45, 150); break;
+        case 4: n2 = randBetween(12, 45); ans = randBetween(12, 45); break;
+        case 5: n2 = randBetween(25, 95); ans = randBetween(35, 125); break;
+        case 6: n2 = randBetween(35, 98); ans = randBetween(150, 850); break;
+        case 7: n2 = randBetween(120, 650); ans = randBetween(110, 450); break;
+        case 8: n2 = randBetween(150, 850); ans = randBetween(450, 1150); break;
+      }
+      n1 = n2 * ans;
+      problemSteps = buildDivisionSteps(n1, n2);
+    }
+
+    currentStepIdx = 0;
+    activeProblem = { num1: n1, num2: n2, op: op, answer: ans };
+
+    const maxCapacity = Math.pow(10, numRods) - 1;
+    if (ans > maxCapacity) {
+      numRods = ans < 10000000 ? 7 : 9;
+      document.getElementById('rod-count-select').value = numRods.toString();
+      initAbacusState();
+      applyPhysicalLayout();
+    }
+
+    document.getElementById('equation-text').textContent = `${n1.toLocaleString()} ${op} ${n2.toLocaleString()} = ?`;
+    document.getElementById('target-hint').textContent = op === '×' ? 'Target: Product' : 'Target: Quotient';
+
+    renderCurrentStep();
+  }
+
+  /* --- Step Rendering --- */
+  function renderCurrentStep() {
+    if (!problemSteps || problemSteps.length === 0) return;
+
+    const isStepOn = document.getElementById('hints-select').value === 'step';
+    const tutorCard = document.getElementById('tutor-card');
+    const revealBtn = document.getElementById('btn-reveal');
+    const zeroBtn = document.getElementById('btn-zero-confirm');
+    tutorCard.classList.remove('step-achieved');
+
+    if (!isStepOn) {
+      document.getElementById('step-title').textContent = 'Independent Practice';
+      document.getElementById('step-pill').textContent = 'Practice Mode';
+      revealBtn.style.display = 'none';
+      zeroBtn.style.display = 'none';
+      document.getElementById('tutor-body').textContent = 'Solve the problem and set the beads directly on the Soroban rods.';
+      document.getElementById('tutor-status').textContent = `Current beads: ${getTotalValue().toLocaleString()}`;
+      document.getElementById('target-status').textContent = '';
+      highlightRodsForValue(0);
+      return;
+    }
+
+    const step = problemSteps[currentStepIdx];
+    document.getElementById('step-title').textContent = `${step.title} of ${problemSteps.length}`;
+    document.getElementById('step-pill').textContent = `Total steps: ${problemSteps.length}`;
+    revealBtn.style.display = 'block';
+    revealBtn.textContent = 'Reveal Target';
+
+    // Show Zero Confirm button if step requires adding/changing 0 beads
+    if (step.isZeroStep && getTotalValue() === step.targetRunning) {
+      zeroBtn.style.display = 'block';
+    } else {
+      zeroBtn.style.display = 'none';
+    }
+
+    document.getElementById('tutor-body').innerHTML = step.prompt;
+    document.getElementById('tutor-status').textContent = `Current beads: ${getTotalValue().toLocaleString()}`;
+    document.getElementById('target-status').textContent = '';
+
+    highlightRodsForValue(step.targetRunning);
+  }
+
+  function highlightRodsForValue(val) {
+    document.querySelectorAll('.soroban-rod').forEach(r => r.classList.remove('highlighted-rod'));
+    if (val === 0) return;
+
+    const valDigits = val.toString().length;
+    for (let i = 0; i < valDigits; i++) {
+      const rodIdx = (numRods - 1) - i;
+      const up = document.getElementById(`upper-rod-${rodIdx}`);
+      const low = document.getElementById(`lower-rod-${rodIdx}`);
+      if (up) up.classList.add('highlighted-rod');
+      if (low) low.classList.add('highlighted-rod');
+    }
+  }
+
+  /* --- Step Advancement Helper --- */
+  function advanceToNextStep() {
+    if (currentStepIdx < problemSteps.length - 1) {
+      const tutorCard = document.getElementById('tutor-card');
+      const tutorStatus = document.getElementById('tutor-status');
+      tutorCard.classList.add('step-achieved');
+      tutorStatus.innerHTML = `🎯 <span style="color:var(--success); font-weight:700;">Step correct! Next step...</span>`;
+      isAdvancing = true;
+      setTimeout(() => {
+        currentStepIdx++;
+        renderCurrentStep();
+        isAdvancing = false;
+      }, 500);
+    } else {
+      completeProblem();
+    }
+  }
+
+  /* --- Live Evaluation & Automatic Step Transition --- */
+  function evaluateLiveFeedback() {
+    if (isAdvancing || isProblemCompleted) return;
+
+    const currentVal = getTotalValue();
+    const isStepOn = document.getElementById('hints-select').value === 'step';
+    const tutorCard = document.getElementById('tutor-card');
+    const tutorStatus = document.getElementById('tutor-status');
+    const zeroBtn = document.getElementById('btn-zero-confirm');
+
+    tutorStatus.textContent = `Current beads: ${currentVal.toLocaleString()}`;
+
+    if (!isStepOn) {
+      if (currentVal === activeProblem.answer) {
+        completeProblem();
+      }
+      return;
+    }
+
+    const step = problemSteps[currentStepIdx];
+
+    // If this step is a zero step and the beads already match, show the confirm button
+    if (step.isZeroStep && currentVal === step.targetRunning) {
+      zeroBtn.style.display = 'block';
+      return;
+    } else {
+      zeroBtn.style.display = 'none';
+    }
+
+    // Normal non-zero bead movement matching the target
+    if (currentVal === step.targetRunning) {
+      advanceToNextStep();
+    } else {
+      tutorCard.classList.remove('step-achieved');
+    }
+  }
+
+  function completeProblem() {
+    isProblemCompleted = true;
+    solvedCount++;
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+
+    localStorage.setItem('soroban_streak', streak);
+    localStorage.setItem('soroban_best', bestStreak);
+    localStorage.setItem('soroban_solved', solvedCount);
+
+    document.getElementById('streak-num').textContent = streak;
+    document.getElementById('best-streak-num').textContent = bestStreak;
+    document.getElementById('solved-num').textContent = solvedCount;
+
+    document.getElementById('btn-zero-confirm').style.display = 'none';
+    document.getElementById('tutor-card').classList.add('step-achieved');
+    document.getElementById('tutor-body').innerHTML = `✨ <span style="color:var(--success); font-weight:700;">Problem Solved!</span> Final answer: <b>${activeProblem.answer.toLocaleString()}</b>. Take your time to review the abacus rods.`;
+    document.getElementById('tutor-status').innerHTML = `<span style="color:var(--success); font-weight:700;">All steps verified</span>`;
+    document.getElementById('target-status').textContent = '';
+
+    const checkBtn = document.getElementById('btn-check');
+    checkBtn.textContent = 'Next Problem →';
+    checkBtn.classList.add('btn-next-problem');
+  }
+
+  function verifySolution() {
+    if (isProblemCompleted) {
+      clearAbacus();
+      generateProblem();
+      return;
+    }
+
+    const currentVal = getTotalValue();
+    const isStepOn = document.getElementById('hints-select').value === 'step';
+    const strictMode = document.getElementById('mode-select').value === 'strict';
+
+    // If in step mode and currently on an intermediate step
+    if (isStepOn && currentStepIdx < problemSteps.length - 1) {
+      const step = problemSteps[currentStepIdx];
+      // If the board matches this step, advance
+      if (currentVal === step.targetRunning) {
+        advanceToNextStep();
+        return;
+      }
+    }
+
+    if (currentVal === activeProblem.answer) {
+      completeProblem();
+    } else {
+      if (strictMode) {
+        streak = 0;
+        localStorage.setItem('soroban_streak', streak);
+        document.getElementById('streak-num').textContent = streak;
+        document.getElementById('tutor-status').innerHTML = `❌ <span style="color:var(--error); font-weight:700;">Streak reset. Review your calculation.</span>`;
+      } else {
+        document.getElementById('tutor-status').innerHTML = `⚠️ <span style="color:#f59e0b; font-weight:700;">Bead placement doesn't match yet. Double check the step.</span>`;
+      }
+    }
+  }
+
+  function clearAbacus() {
+    for (let r = 0; r < numRods; r++) {
+      abacusState[r].upper = false;
+      for (let i = 0; i < 4; i++) abacusState[r].lower[i] = false;
+    }
+    renderAbacus();
+  }
+
+  /* --- Event Listeners --- */
+  document.getElementById('btn-zero-confirm').addEventListener('click', () => {
+    advanceToNextStep();
+  });
+
+  document.getElementById('btn-reveal').addEventListener('click', () => {
+    const step = problemSteps[currentStepIdx];
+    if (step) {
+      document.getElementById('target-status').textContent = `Target: ${step.targetRunning.toLocaleString()}`;
+    }
+  });
+
+  document.getElementById('op-select').addEventListener('change', () => { clearAbacus(); generateProblem(); });
+  document.getElementById('diff-select').addEventListener('change', () => { clearAbacus(); generateProblem(); });
+  document.getElementById('hints-select').addEventListener('change', renderCurrentStep);
+
+  document.getElementById('bead-size-select').addEventListener('change', applyPhysicalLayout);
+  document.getElementById('beam-gap-select').addEventListener('change', applyPhysicalLayout);
+  document.getElementById('beam-bar-select').addEventListener('change', applyPhysicalLayout);
+
+  document.getElementById('rod-count-select').addEventListener('change', (e) => {
+    numRods = parseInt(e.target.value, 10);
+    initAbacusState();
+    applyPhysicalLayout();
+  });
+
+  document.getElementById('btn-clear').addEventListener('click', clearAbacus);
+  document.getElementById('btn-check').addEventListener('click', verifySolution);
+
+  /* --- Initial Boot Sequence --- */
+  numRods = parseInt(document.getElementById('rod-count-select').value, 10);
+  initAbacusState();
+  generateProblem();
+  applyPhysicalLayout();
+</script>
+</body>
+</html>
